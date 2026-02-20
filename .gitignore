@@ -1,0 +1,15 @@
+# Environment Variables
+# .env
+
+# Docker Data Directories
+postgres_data/
+caddy_data/
+caddy_config/
+data/
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

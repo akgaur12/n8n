@@ -1,0 +1,15 @@
+FROM n8nio/n8n:2.4.1
+
+COPY --from=alpine:3.23 /sbin/apk /sbin/apk
+COPY --from=alpine:3.23 /usr/lib/libapk.so* /usr/lib/
+
+USER root
+
+RUN set -eux; \
+    apk add --no-cache build-base python3 py3-pip ffmpeg; \
+    pip3 install --break-system-packages pandas numpy requests yt-dlp; \
+    apk del build-base; \
+    rm -f /sbin/apk /usr/lib/libapk.so*; \
+    rm -rf /var/cache/apk/*
+
+USER node
