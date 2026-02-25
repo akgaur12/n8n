@@ -7,8 +7,9 @@ This repository contains a customized **n8n** deployment optimized for security 
 ## 🚀 Key Features
 
 - **Isolated Execution**: Code blocks run in a separate container, shielding the main n8n process.
-- **Customized Python Environment**: Pre-loaded with `pandas`, `numpy`, and `yt-dlp`.
+- **Customized Python Environment**: Pre-loaded with `pandas` and `numpy`.
 - **Media Support**: `ffmpeg` is included in the main container for video/audio processing.
+- **Integrated ngrok**: Automatic tunneling for webhooks without manual installation.
 - **Dockerized**: Easy to deploy and manage with Docker Compose.
 
 ---
@@ -36,11 +37,10 @@ graph TD
 
 ## 📁 Project Structure
 
-- **[docker-compose.yml](./docker-compose.yml)**: Orchestrates n8n and the task-runner services.
+- **[docker-compose.yml](./docker-compose.yml)**: Orchestrates n8n, the task-runner, and ngrok services.
 - **[Dockerfile.n8n](./Dockerfile.n8n)**: Custom image for the main n8n application (includes `ffmpeg` and local Python libs).
 - **[Dockerfile.runners](./Dockerfile.runners)**: Custom image for the external task runners (includes `uv` and specific data science libs).
-- **[n8n-task-runners.json](./n8n-task-runners.json)**: Configuration for JS and 
-Python runner environments, specifying allowed libraries and environment variables.
+- **[n8n-task-runners.json](./n8n-task-runners.json)**: Configuration for JS and Python runner environments, specifying allowed libraries and environment variables.
 
 ---
 
@@ -55,8 +55,9 @@ touch .env
 
 Then, edit `.env` and define your variables:
 - `N8N_RUNNERS_AUTH_TOKEN`: A secure random secret shared between the app and runner.
-- `WEBHOOK_URL`: Your public-facing URL (e.g., from ngrok).
+- `WEBHOOK_URL`: Your public-facing URL (provided by ngrok).
 - `N8N_HOST`: Your public domain or localhost.
+- `NGROK_AUTHTOKEN`: Your ngrok authtoken (get it from the [ngrok dashboard](https://dashboard.ngrok.com/)).
 
 ### 2. Build the Images
 Build both the application and runner containers:
@@ -76,42 +77,25 @@ docker compose up -d
 
 ## 🌐 External Access (ngrok)
 
-To receive webhooks (like from GitHub, Stripe, or Telegram), n8n must be accessible from the internet. Here is how to set up ngrok:
+This setup includes an integrated **ngrok** container to make n8n accessible from the internet for webhooks.
 
-### 1. Install ngrok
-On Debian/Ubuntu based systems:
+### 1. Setup ngrok
+1.  Add your ngrok authtoken to the `.env` file as `NGROK_AUTHTOKEN`.
+2.  Start the services: `docker compose up -d`.
 
-```bash
-curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
-  | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
-  && echo "deb https://ngrok-agent.s3.amazonaws.com bookworm main" \
-  | sudo tee /etc/apt/sources.list.d/ngrok.list \
-  && sudo apt update \
-  && sudo apt install ngrok
-```
-
-### 2. Configure Auth Token
-Add your ngrok authtoken (get it from the [ngrok dashboard](https://dashboard.ngrok.com/)):
-
-```bash
-ngrok config add-authtoken <YOUR_NGROK_AUTHTOKEN>
-```
-
-### 3. Start ngrok
-Expose port 5678 to the internet:
-
-```bash
-ngrok http 5678
-```
-
-### 4. Update n8n Configuration
-1.  Copy the forwarding URL shown in the ngrok terminal (e.g., `https://abc-123.ngrok-free.app`).
-2.  Update your `WEBHOOK_URL` and `N8N_HOST` in `.env`:
+### 2. Update n8n Configuration
+1.  Check the ngrok logs to find your public URL:
+    ```bash
+    docker logs n8n-ngrok-1
+    ```
+    (Or check the ngrok dashboard).
+2.  Copy the forwarding URL (e.g., `https://abc-123.ngrok-free.app`).
+3.  Update your `WEBHOOK_URL` and `N8N_HOST` in `.env`:
     ```env
     WEBHOOK_URL=https://abc-123.ngrok-free.app/
     N8N_HOST=abc-123.ngrok-free.app
     ```
-3.  Restart the containers:
+4.  Restart the containers to apply the changes:
     ```bash
     docker compose up -d
     ```
@@ -138,3 +122,4 @@ If you see `Error: Missing auth token` in the logs, ensure `N8N_RUNNERS_AUTH_TOK
 ### Viewing Logs
 - **Main App**: `docker logs -f n8n-main`
 - **Runners**: `docker logs -f runner`
+- **ngrok**: `docker logs -f n8n-ngrok-1` (Note: Container name might vary based on project folder)
