@@ -1,4 +1,6 @@
 # n8n with External Task Runners
+<img width="1772" height="589" alt="image" src="https://github.com/user-attachments/assets/a7e49135-ac9c-4cc6-accd-4521a83637d8" />
+
 
 This repository contains a customized **n8n** deployment optimized for security and scale using **External Task Runners**. It allows for isolated execution of JavaScript and Python code blocks.
 
